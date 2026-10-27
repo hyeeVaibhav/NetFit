@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Presentation{% endblock %}
+{% block body_class %}present-mode{% endblock %}
+{% block shell %}
+<div class="deck">
+  <div class="deck-top">
+    <span>NIDS · Presentation Mode</span>
+    <span id="counter"></span>
+    <span>
+      <button class="deck-btn" id="fsBtn" type="button" title="Full screen (F)">Full screen</button>
+      <a class="deck-btn text-decoration-none d-inline-block" href="{{ url_for('page_dashboard') }}">Exit</a>
+    </span>
+  </div>
+  <div class="slide-area"><div class="slide" id="slide" aria-live="polite"></div></div>
+  <div class="deck-bottom">
+    <button class="deck-btn" id="prev" type="button" aria-label="Previous slide">‹</button>
+    <div id="dots" class="d-flex gap-2 align-items-center"></div>
+    <button class="deck-btn" id="next" type="button" aria-label="Next slide">›</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/present.js') }}"></script>{% endblock %}

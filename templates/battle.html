@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Model Battle{% endblock %}
+{% block heading %}Model Battle{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-12"><div class="card-x">
+    <h5>Saved evaluation: every model on the same held-out test set</h5>
+    <div class="card-sub">Numbers come straight from the notebook export (metrics.json). The best value in each column is highlighted. Click a column to sort.</div>
+    <div class="table-responsive-x"><table class="table table-x table-hover align-middle mb-0" id="battleTable"></table></div>
+  </div></div>
+
+  <div class="col-lg-6"><div class="card-x"><h5>Scores side by side</h5><div class="chart-box tall"><canvas id="bMetrics"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card-x"><h5>Missed attacks and false alarms</h5><div class="chart-box tall"><canvas id="bMissed"></canvas></div></div></div>
+
+  <div class="col-12"><div class="card-x">
+    <h5>Live battle: run all models on one file</h5>
+    <div class="card-sub">Every loaded model scores the same flows right now. If the file has a <code>Label</code> column, the real errors are counted.</div>
+    <div class="row g-3 align-items-end">
+      <div class="col-lg-5">
+        <label class="form-label small mb-1">Data</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="file" class="form-control form-control-sm" id="bFile" accept=".csv,text/csv" style="max-width:260px">
+          {% if app_status.sample_available %}<button class="btn btn-outline-primary btn-sm" id="bSample" type="button">Use sample file</button>{% endif %}
+        </div>
+        <div class="small text-secondary mt-1" id="bChosen">Nothing chosen yet.</div>
+      </div>
+      <div class="col-lg-5"><label class="form-label small mb-1">Thresholds (a flow is an attack at or above this probability)</label>
+        <div class="row g-2">{% for m in models %}{% if m.loaded %}
+          <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text" title="{{ m.name }}">{{ m.name.split(' ')[0] if 'Balanced' not in m.name else 'Bal. LR' }}</span>
+            <input type="number" class="form-control" style="min-width:72px" step="0.05" min="0.05" max="0.95" value="0.50" data-thr="{{ m.key }}"></div></div>{% endif %}{% endfor %}</div></div>
+      <div class="col-lg-2"><button class="btn btn-primary w-100" id="bRun" type="button" {{ 'disabled' if not app_status.ready }}>Run battle</button></div>
+    </div>
+    <div id="bError" class="alert alert-danger d-none mt-3 mb-0"></div>
+    <div id="bResult" class="mt-4"></div>
+  </div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/battle.js') }}"></script>{% endblock %}

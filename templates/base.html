@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}NIDS{% endblock %} · Network Intrusion Detection</title>
+  <script>/* apply the saved theme before first paint (no flash) */
+    try { document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('nids-theme') || 'light'); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% block shell %}
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{{ url_for('page_dashboard') }}">
+      <span class="brand-mark">N</span>
+      <span><strong>NIDS</strong><small>Intrusion Detection</small></span>
+    </a>
+    <nav class="nav-list">
+      <a class="nav-item {{ 'active' if page == 'dashboard' }}" href="{{ url_for('page_dashboard') }}">Dashboard</a>
+      <a class="nav-item {{ 'active' if page == 'predict' }}" href="{{ url_for('page_predict') }}">CSV Prediction</a>
+      <a class="nav-item {{ 'active' if page == 'history' }}" href="{{ url_for('page_history') }}">Prediction History</a>
+      <div class="nav-sep">Evidence</div>
+      <a class="nav-item {{ 'active' if page == 'why' }}" href="{{ url_for('page_why') }}">Why ANN?</a>
+      <a class="nav-item {{ 'active' if page == 'battle' }}" href="{{ url_for('page_battle') }}">Model Battle</a>
+      <a class="nav-item {{ 'active' if page == 'present' }}" href="{{ url_for('page_present') }}">Presentation Mode</a>
+    </nav>
+    <div class="sidebar-foot">
+      {% if app_status.ready %}
+        <div class="status-pill ok" title="{{ app_status.models | tojson | forceescape }}">
+          <span class="dot"></span>{{ app_status.models.values() | select | list | length }} / {{ app_status.models | length }} models loaded
+        </div>
+      {% else %}
+        <div class="status-pill bad"><span class="dot"></span>Setup required</div>
+      {% endif %}
+      <button class="btn btn-sm btn-outline-light w-100 mt-2" id="themeToggle" type="button">Toggle dark / light</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-sm btn-outline-secondary d-lg-none" id="menuBtn" type="button" aria-label="Menu">☰</button>
+      <div class="topbar-title">{% block heading %}{% endblock %}</div>
+    </header>
+    <main class="content">
+      {% macro checklist() %}
+      <ul class="list-unstyled small mb-2">
+        {% for r in app_status.inventory %}
+        <li>{% if r.present %}<span class="text-success fw-bold">✓</span>{% else %}<span class="text-danger fw-bold">✗</span>{% endif %}
+          <code>{{ r.path }}</code> <span class="text-secondary">· {{ r.label }}{% if r.present %} ({{ r.size_kb }} KB){% endif %}</span></li>
+        {% endfor %}
+      </ul>
+      {% endmacro %}
+      {% if not app_status.ready %}
+      <div class="alert alert-warning setup-banner" role="alert">
+        <h5 class="alert-heading mb-2">Setup required: no trained model could be loaded</h5>
+        <p class="mb-2">The app looked in <code>{{ app_status.artifact_dir }}</code>
+          {% if app_status.artifact_root %}and found an export folder at <code>{{ app_status.artifact_root }}</code>{% else %}and found no export there{% endif %}.
+          {% if app_status.auto_extracted %}<br><span class="text-success">{{ app_status.auto_extracted }}</span>{% endif %}</p>
+        {{ checklist() }}
+        {% if app_status.errors %}<p class="mb-1 small"><strong>What went wrong:</strong></p>
+        <ul class="small mb-2">{% for k, v in app_status.errors.items() %}<li><code>{{ k }}</code>: {{ v }}</li>{% endfor %}</ul>{% endif %}
+        <p class="mb-0 small"><strong>Fix:</strong> in PowerShell, from the app folder, run <code>.\setup_artifacts.ps1</code>, then <code>python check_setup.py</code>,
+          then restart the app. No export on this computer? Re-create it with the recovery cell in the README (section 3).</p>
+      </div>
+      {% elif app_status.missing_models or app_status.missing_evaluation or app_status.warnings or app_status.errors %}
+      <div class="alert alert-info setup-banner" role="alert">
+        <h6 class="alert-heading mb-2">Partly set up: predictions work, but some things need attention</h6>
+        {% if app_status.errors %}<ul class="small mb-2">{% for k, v in app_status.errors.items() %}<li><code>{{ k }}</code> not loaded: {{ v }}</li>{% endfor %}</ul>{% endif %}
+        {% if app_status.missing_evaluation %}<p class="small mb-2"><strong>Charts and metrics are unavailable</strong> because
+          {% for f in app_status.missing_evaluation %}<code>{{ f }}</code>{{ ', ' if not loop.last }}{% endfor %} {{ 'is' if app_status.missing_evaluation | length == 1 else 'are' }} missing.
+          Re-create them with the recovery cell in the README (section 3).</p>{% endif %}
+        {% if app_status.warnings %}<p class="small mb-1"><strong>Library version warnings:</strong></p>
+        <ul class="small mb-2">{% for w in app_status.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+        <details><summary class="small">Show the file checklist</summary>{{ checklist() }}</details>
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="app-footer">NIDS college project · results shown here come from the exported notebook evaluation and the files you upload</footer>
+  </div>
+</div>
+{% endblock %}
+
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

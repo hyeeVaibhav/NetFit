@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card-x hero">
+      <div class="row align-items-center g-3">
+        <div class="col-lg-8">
+          <h3 class="fw-bold mb-1">Network Intrusion Detection System</h3>
+          <p class="card-sub mb-3">An Artificial Neural Network reads ten facts about a network flow (ports, protocol, bytes, packets,
+            TCP flags, duration) and decides whether the flow is <b>normal</b> or an <b>attack</b>. It is compared with classical
+            machine-learning models on the same data.</p>
+          <a class="btn btn-light fw-semibold me-2" href="{{ url_for('page_predict') }}">Run a prediction</a>
+          <a class="btn btn-outline-light me-2" href="{{ url_for('page_predict') }}?sample=1">Try the sample file</a>
+          <a class="btn btn-outline-light" href="{{ url_for('page_present') }}">Presentation mode</a>
+        </div>
+        <div class="col-lg-4">
+          <div class="row g-2 text-center">
+            <div class="col-4"><div class="big-stat fw-bold fs-3">{{ totals.runs }}</div><div class="small opacity-75">runs saved</div></div>
+            <div class="col-4"><div class="big-stat fw-bold fs-3">{{ '{:,}'.format(totals.flows) }}</div><div class="small opacity-75">flows scanned</div></div>
+            <div class="col-4"><div class="big-stat fw-bold fs-3">{{ '{:,}'.format(totals.attacks) }}</div><div class="small opacity-75">flagged</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12"><div class="row g-3" id="kpiRow"><div class="col-12"><div class="skeleton" style="height:96px"></div></div></div></div>
+
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h5>Model comparison on the held-out test set</h5>
+      <div class="card-sub">Saved evaluation from the notebook (threshold 0.50). Higher is better.</div>
+      <div class="chart-box"><canvas id="chartMetrics"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h5>Class balance</h5>
+      <div class="card-sub">Attacks are rare, so accuracy alone is misleading.</div>
+      <div class="chart-box short"><canvas id="chartBalance"></canvas></div>
+      {% if dataset %}
+      <ul class="list-unstyled small mt-3 mb-0 text-secondary">
+        <li>Dataset: <b>{{ dataset.name }}</b></li>
+        <li>Flows used: <b>{{ '{:,}'.format(dataset.rows_used) }}</b> · test flows: <b>{{ '{:,}'.format(dataset.test_rows) }}</b></li>
+        <li>Input features: <b>{{ dataset.features | length }}</b></li>
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card-x">
+      <h5>What the results say</h5>
+      <div class="card-sub">Generated from the saved numbers, so it always matches the charts.</div>
+      {% if insights %}
+      <div class="d-flex flex-column gap-2">
+        {% for i in insights %}<div class="insight {{ i.tone }}"><h6>{{ i.title }}</h6><p>{{ i.text }}</p></div>{% endfor %}
+      </div>
+      {% else %}<p class="text-secondary mb-0">Insights appear once metrics.json is available.</p>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-x">
+      <h5>Recent predictions</h5>
+      <div class="card-sub">Stored in SQLite. <a href="{{ url_for('page_history') }}">See all</a></div>
+      {% if recent %}
+      <div class="table-responsive-x"><table class="table table-sm table-x align-middle mb-0">
+        <thead><tr><th>#</th><th>File</th><th>Model</th><th class="text-end">Flows</th><th class="text-end">Flagged</th></tr></thead>
+        <tbody>{% for r in recent %}
+          <tr><td><a href="{{ url_for('page_results', run_id=r.id) }}">#{{ r.id }}</a></td><td class="text-truncate" style="max-width:130px">{{ r.filename }}</td>
+          <td>{{ r.model_name }}</td><td class="text-end mono">{{ '{:,}'.format(r.n_rows) }}</td><td class="text-end mono">{{ '{:,}'.format(r.n_attack) }}</td></tr>
+        {% endfor %}</tbody></table></div>
+      {% else %}
+      <p class="text-secondary mb-2">No predictions yet.</p>
+      <a class="btn btn-sm btn-primary" href="{{ url_for('page_predict') }}?sample=1">Run the sample file</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>{% endblock %}

@@ -1,0 +1,8 @@
+# Flask is the only package you normally need to install: the rest are already in the notebook environment.
+# Use the SAME Python environment as the notebook (the saved models are pickled with its library versions).
+flask>=3.0
+pandas>=2.0
+numpy>=1.26
+scikit-learn>=1.3
+joblib>=1.3
+tensorflow>=2.16

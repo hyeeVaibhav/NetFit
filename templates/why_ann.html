@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Why ANN{% endblock %}
+{% block heading %}Why ANN?{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card-x hero">
+      <h4 class="fw-bold mb-1">Why use an Artificial Neural Network for intrusion detection?</h4>
+      <p class="card-sub mb-0">Every chart on this page is drawn from the evaluation saved by the notebook (held-out test set).
+        Nothing here is typed in by hand, and the honest trade-offs are included.</p>
+    </div>
+  </div>
+
+  <div class="col-md-4"><div class="card-x"><h6>It learns combinations</h6>
+    <p class="text-secondary mb-0 small">One feature alone rarely gives an attack away. A neural network's hidden layers learn combinations such as
+      "tiny reply + unusual TCP flags + rare port", which a straight-line model cannot express.</p></div></div>
+  <div class="col-md-4"><div class="card-x"><h6>It outputs a probability</h6>
+    <p class="text-secondary mb-0 small">The sigmoid output is a number between 0 and 1. A security team can move the threshold to trade
+      missed attacks against false alarms, without retraining.</p></div></div>
+  <div class="col-md-4"><div class="card-x"><h6>It can be told attacks matter more</h6>
+    <p class="text-secondary mb-0 small">Attacks are rare. Class weights make a missed attack cost more in the loss, which pushes the network
+      towards detecting them instead of ignoring them.</p></div></div>
+
+  <div class="col-12"><div class="card-x">
+    <h5>What the saved results say</h5>
+    <div class="card-sub">Sentences are generated from the numbers below.</div>
+    {% if insights %}<div class="row g-2">{% for i in insights %}
+      <div class="col-md-6"><div class="insight {{ i.tone }}"><h6>{{ i.title }}</h6><p>{{ i.text }}</p></div></div>{% endfor %}</div>
+    {% else %}<p class="text-secondary mb-0">metrics.json is not available.</p>{% endif %}
+  </div></div>
+
+  <div class="col-lg-7"><div class="card-x"><h5>1. Accuracy, precision, recall and F1</h5>
+    <div class="card-sub">Four models, same test flows.</div>
+    <div class="chart-box tall"><canvas id="cMetrics"></canvas></div>
+    <div class="say">Look at Logistic Regression: high accuracy, but a very low recall bar. That is the accuracy trap.</div></div></div>
+  <div class="col-lg-5"><div class="card-x"><h5>2. How many attacks does each model catch?</h5>
+    <div class="card-sub">Recall = real attacks detected ÷ all real attacks.</div>
+    <div class="chart-box tall"><canvas id="cRecall"></canvas></div></div></div>
+
+  <div class="col-12"><div class="card-x"><h5>3. The price of detection: missed attacks vs false alarms</h5>
+    <div class="card-sub">Counts on the test set. A missed attack is the dangerous error; a false alarm costs analyst time.</div>
+    <div class="chart-box"><canvas id="cMissed"></canvas></div></div></div>
+
+  <div class="col-lg-6"><div class="card-x"><div class="d-flex justify-content-between align-items-start">
+      <div><h5>4. ROC curves</h5><div class="card-sub">Closer to the top-left corner is better.</div></div>
+      <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="zoomRoc"><label class="form-check-label small" for="zoomRoc">Zoom</label></div></div>
+    <div class="chart-box tall"><canvas id="cRoc"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card-x"><div class="d-flex justify-content-between align-items-start">
+      <div><h5>5. Precision-Recall curves</h5><div class="card-sub">More honest than ROC when attacks are rare.</div></div>
+      <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="zoomPr"><label class="form-check-label small" for="zoomPr">Zoom</label></div></div>
+    <div class="chart-box tall"><canvas id="cPr"></canvas></div></div></div>
+
+  <div class="col-12"><div class="card-x"><h5>6. Confusion matrices</h5>
+    <div class="card-sub">Rows are the truth, columns the prediction. The bottom-left cell is the attacks each model MISSED.</div>
+    <div class="row g-4" id="cmGrid"></div></div></div>
+
+  <div class="col-12"><div class="card-x"><h5>7. Move the ANN's sensitivity</h5>
+    <div class="card-sub">Drag the slider: because the ANN outputs a probability, you choose where to stand between catching more attacks and raising fewer alarms.</div>
+    <div id="explorer"></div>
+    <div class="chart-box mt-3"><canvas id="cSweep"></canvas></div></div></div>
+
+  <div class="col-lg-7"><div class="card-x"><h5>8. How the network is built</h5>
+    <div class="card-sub" id="archSub"></div><div id="archSvg"></div></div></div>
+  <div class="col-lg-5"><div class="card-x"><h5>One real flow, step by step</h5>
+    <div class="card-sub">A single attack flow from the test set, pushed through the trained network.</div>
+    <div id="forwardDemo"></div></div></div>
+
+  <div class="col-lg-6"><div class="card-x"><h5>9. Learning curves: loss</h5>
+    <div class="card-sub">Both lines falling together means real learning.</div><div class="chart-box"><canvas id="cLoss"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card-x"><h5>Learning curves: recall</h5>
+    <div class="card-sub">How well attacks were caught while training.</div><div class="chart-box"><canvas id="cTrainRecall"></canvas></div></div></div>
+
+  <div class="col-lg-7"><div class="card-x"><h5>10. Detection by attack type</h5>
+    <div class="card-sub">Click a name in the legend to show or hide a model.</div><div class="chart-box tall"><canvas id="cType"></canvas></div></div></div>
+  <div class="col-lg-5"><div class="card-x"><h5>11. Which features matter?</h5>
+    <div class="card-sub">ANN: drop in ROC-AUC when a feature is shuffled. Random Forest: impurity importance.</div>
+    <div class="chart-box tall"><canvas id="cFeat"></canvas></div></div></div>
+
+  <div class="col-12"><div class="card-x">
+    <h5>12. The honest limits</h5>
+    <ul class="mb-0 small text-secondary">
+      <li>The model is binary: it says attack or normal, not which attack type.</li>
+      <li>It was trained on flows from one dataset (NF-UNSW-NB15) using these ten features; other networks may behave differently.</li>
+      <li>It cannot recognise an attack type that looks nothing like the training data.</li>
+      <li>This app scores uploaded flow records. It does not capture live packets or block traffic.</li>
+      <li>At the default threshold the ANN raises more false alarms than the Random Forest; the threshold slider shows the trade-off.</li>
+    </ul></div></div>
+
+  {% if pngs %}
+  <div class="col-12"><div class="card-x">
+    <button class="btn btn-outline-secondary btn-sm mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#gallery">
+      Show the original notebook charts ({{ pngs | length }})</button>
+    <div class="collapse" id="gallery"><div class="row g-3 gallery">
+      {% for p in pngs %}<div class="col-md-6"><a href="{{ url_for('artifact_png', name=p) }}" target="_blank" rel="noopener">
+        <img src="{{ url_for('artifact_png', name=p) }}" alt="{{ p }}" loading="lazy"></a><div class="small text-secondary">{{ p }}</div></div>{% endfor %}
+    </div></div>
+  </div></div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/why.js') }}"></script>{% endblock %}
