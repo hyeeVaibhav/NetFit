@@ -1,4 +1,5 @@
 # NIDS Web App: Network Intrusion Detection with an ANN
+Author: Vaibhav Kr Singh,Atharv Saxena,Shubham Saurabh | B.Tech CSE (AIML-C) Student
 
 A Flask + SQLite web application around your trained models. Upload a CSV of network flows, choose a model and a
 threshold, and get a verdict (Normal / Attack), a probability and a risk band for every flow. The app also presents the
@@ -223,3 +224,4 @@ Before presenting: start the app **before** the class (TensorFlow loads slowly),
 * Probabilities of class-weighted models (ANN, balanced Logistic Regression) are shifted upward by the weights, so "0.8" is not an 80 % real chance. Use them to rank flows and choose a threshold, not as literal probabilities.
 * The built-in server (`python app.py`) is for a demo on one machine. For a real deployment use a production server and add authentication.
 * There is no login or CSRF protection because the app is meant for local use.
+  
